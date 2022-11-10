@@ -9,6 +9,22 @@ require('dotenv').config()
 app.use(cors());
 app.use(express.json())
 
+function verifyJWT(req, res, next){
+    const authHeader = req.headers.authorization
+    if(!authHeader){
+      return res.status(401).send({message: 'Unauthorized Access'})
+    }
+    const token = authHeader.split(' ')[1]
+    jwt.verify(token,process.env.ACCESS_TOKEN_SECRET, function(err, decoded ) {
+  
+      if(err) {
+        return res.status(401).send({message: 'Unauthorized Access'})
+      }
+      req.decoded = decoded ;
+      next()
+  
+    })
+  }
 
 
 // Mongodb Connection 
@@ -23,22 +39,11 @@ async function run () {
         const addedServiceCollection = client.db('addedCollection').collection('addedServices')
         const reviewCollection = client.db('reviewCollection').collection('addReviews')
     
-        function verifyJWT(req, res, next){
-            const authHeader = req.headers.authorization
-            if(!authHeader){
-              return res.status(401).send({message: 'Unauthorized Access'})
-            }
-            const token = authHeader.split(' ')[1]
-            jwt.verify(token,process.env.ACCESS_TOKEN_SECRET, function(err, decoded ) {
-          
-              if(err) {
-                return res.status(401).send({message: 'Unauthorized Access'})
-              }
-              req.decoded = decoded ;
-              next()
-          
-            })
-          }
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d'})
+            res.send({token})
+          })
           
      
      
@@ -68,12 +73,12 @@ async function run () {
     })
 
     // Get Method for Added 
-    app.get('/added', async(req, res) => {
-        // const decoded = req.decoded; 
-        // console.log('Inside orders Api', decoded)
-        // if(decoded.email !== req.query.email){
-        //     res.status(403).send({message: 'UnAuthorized access'})
-        //   }
+    app.get('/added',verifyJWT, async(req, res) => {
+        const decoded = req.decoded; 
+        console.log('Inside orders Api', decoded)
+        if(decoded.email !== req.query.email){
+            res.status(403).send({message: 'UnAuthorized access'})
+          }
         let query = {} 
         if (req.query.email){
             query = {
@@ -85,7 +90,7 @@ async function run () {
         res.send(orders)
     })
 
-    app.get('/reviews', async(req,res)=> {
+    app.get('/reviews', verifyJWT, async(req,res)=> {
         let query = {}
         if (req.query.email){
             query = {
@@ -102,7 +107,7 @@ async function run () {
 
     /**Start of AddedCollection API */
 
-    app.post('/added', async(req, res) => {
+    app.post('/added', verifyJWT, async(req, res) => {
         const addedService = req.body; 
         const result = await addedServiceCollection.insertOne(addedService)
         res.send(result)
