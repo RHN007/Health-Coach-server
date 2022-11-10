@@ -85,7 +85,7 @@ async function run () {
         res.send(orders)
     })
 
-    app.get('/review', async(req,res)=> {
+    app.get('/reviews', async(req,res)=> {
         let query = {}
         if (req.query.email){
             query = {
@@ -133,7 +133,7 @@ async function run () {
         res.send(result)
       })
 
-      app.patch('/review/:id',  async(req, res)=> {
+      app.patch('/reviews/:id',  async(req, res)=> {
         const id = req.params.id;
         const status = req.body.status
         const query = {_id:ObjectId(id)}
@@ -156,14 +156,12 @@ async function run () {
     app.delete('/added/:id',  async(req, res)=> {
         const id = req.params.id;
         const query = {_id:ObjectId(id)}
-      
         const result = await addedServiceCollection.deleteOne(query);
         res.send(result)
         })
     app.delete('/reviews/:id',  async(req, res)=> {
         const id = req.params.id;
         const query = {_id:ObjectId(id)}
-      
         const result = await reviewCollection.deleteOne(query);
         res.send(result)
         })
